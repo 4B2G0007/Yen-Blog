@@ -9,10 +9,15 @@ export const dbService = {
     }
     const { data, error } = await supabase
       .from('posts')
-      .select('*')
+      .select('*, likes(count), comments(count)')
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return data;
+    
+    return data.map(post => ({
+      ...post,
+      likes_count: post.likes?.[0]?.count || 0,
+      comments_count: post.comments?.[0]?.count || 0
+    }));
   },
 
   async getPostBySlug(slug) {
