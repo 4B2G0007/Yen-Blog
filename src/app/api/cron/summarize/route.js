@@ -31,10 +31,11 @@ export async function POST(req) {
         id,
         content,
         created_at,
-        profiles ( display_name, email ),
+        profiles!inner ( display_name, email, role ),
         posts ( title )
       `)
-      .eq('summarized', false);
+      .eq('summarized', false)
+      .neq('profiles.role', 'admin');
 
     if (commentsError) throw commentsError;
 
@@ -45,9 +46,10 @@ export async function POST(req) {
         id,
         content,
         created_at,
-        profiles ( display_name, email )
+        profiles!inner ( display_name, email, role )
       `)
-      .eq('summarized', false);
+      .eq('summarized', false)
+      .neq('profiles.role', 'admin');
 
     if (guestbookError) throw guestbookError;
 

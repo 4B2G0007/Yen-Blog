@@ -267,21 +267,23 @@ export const dbService = {
     if (isMock) {
       const comments = MockDb.getStorageItem("mock_comments", []);
       const guestbook = MockDb.getStorageItem("mock_guestbook", []);
-      const pendingComments = comments.filter(c => !c.summarized).length;
-      const pendingGuestbook = guestbook.filter(g => !g.summarized).length;
+      const pendingComments = comments.filter(c => !c.summarized && c.user_id !== "user-mock-admin").length;
+      const pendingGuestbook = guestbook.filter(g => !g.summarized && g.user_id !== "user-mock-admin").length;
       return pendingComments + pendingGuestbook;
     }
     
     const { count: commentsCount, error: commentsError } = await supabase
       .from('comments')
-      .select('*', { count: 'exact', head: true })
-      .eq('summarized', false);
+      .select('*, profiles!inner(role)', { count: 'exact', head: true })
+      .eq('summarized', false)
+      .neq('profiles.role', 'admin');
     if (commentsError) throw commentsError;
 
     const { count: guestbookCount, error: guestbookError } = await supabase
       .from('guestbook')
-      .select('*', { count: 'exact', head: true })
-      .eq('summarized', false);
+      .select('*, profiles!inner(role)', { count: 'exact', head: true })
+      .eq('summarized', false)
+      .neq('profiles.role', 'admin');
     if (guestbookError) throw guestbookError;
 
     return (commentsCount || 0) + (guestbookCount || 0);
@@ -292,7 +294,8 @@ export const dbService = {
       const comments = MockDb.getStorageItem("mock_comments", []);
       const guestbook = MockDb.getStorageItem("mock_guestbook", []);
       
-      const pendingCount = comments.filter(c => !c.summarized).length + guestbook.filter(g => !g.summarized).length;
+      const pendingCount = comments.filter(c => !c.summarized && c.user_id !== "user-mock-admin").length
+        + guestbook.filter(g => !g.summarized && g.user_id !== "user-mock-admin").length;
 
       const updatedComments = comments.map(c => ({ ...c, summarized: true }));
       const updatedGuestbook = guestbook.map(g => ({ ...g, summarized: true }));
