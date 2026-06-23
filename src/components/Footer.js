@@ -1,3 +1,5 @@
+import { Github } from 'lucide-react';
+
 export default function Footer() {
   return (
     <footer style={{
@@ -14,8 +16,30 @@ export default function Footer() {
         alignItems: 'center',
         gap: '0.75rem'
       }}>
-        <div style={{ fontWeight: 700, letterSpacing: '1px', fontSize: '0.95rem' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.55rem',
+          fontWeight: 700,
+          letterSpacing: '1px',
+          fontSize: '0.95rem'
+        }}>
           <span className="text-gradient">Yen BLOG</span>
+          <a
+            className="footer-github-link"
+            href="https://github.com/4B2G0007/Yen-Blog"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="前往 Yen Blog GitHub 專案"
+            title="GitHub"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              color: 'var(--text-muted)'
+            }}
+          >
+            <Github size={18} aria-hidden="true" />
+          </a>
         </div>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
           © {new Date().getFullYear()} Aether Blog. All rights reserved. Powered by Next.js & Supabase.

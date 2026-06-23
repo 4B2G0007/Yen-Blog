@@ -98,6 +98,22 @@ body {
   display: inline-block;
 }
 
+.footer-github-link {
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.footer-github-link:hover {
+  color: var(--text-primary) !important;
+  transform: translateY(-2px);
+}
+
+.footer-github-link:focus-visible {
+  color: var(--text-primary) !important;
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
 /* Main layouts */
 .container {
   width: 100%;
