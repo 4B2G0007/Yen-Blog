@@ -105,7 +105,3 @@ SMTP_FROM_NAME=Yen Blog AI 助手
 3. 設定所需環境變數。
 4. 完成部署。
 5. 如需定時彙整，可使用 Vercel Cron 或其他排程服務呼叫摘要 API。
-
-## GitHub
-
-[4B2G0007/Yen-Blog](https://github.com/4B2G0007/Yen-Blog)
