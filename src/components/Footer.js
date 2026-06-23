@@ -48,10 +48,10 @@ export default function Footer() {
           </a>
         </div>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-          © {new Date().getFullYear()} Aether Blog. All rights reserved. Powered by Next.js & Supabase.
+          © {new Date().getFullYear()} Yen Blog. All rights reserved. Powered by Next.js & Supabase.
         </p>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', maxWidth: '500px' }}>
-          用Gemini做的
+          用Codex做的
         </p>
       </div>
     </footer>
