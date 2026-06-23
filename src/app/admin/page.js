@@ -7,6 +7,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ShieldAlert, PlusCircle, Edit, Trash, Save, Eye, LayoutGrid, CheckCircle, ChevronDown, ChevronUp, Mail, Brain, ImagePlus, X } from 'lucide-react';
 
+const generateSummary = (markdown) => {
+  const plainText = markdown
+    .replace(/[#*`~_]/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\n+/g, ' ')
+    .trim();
+  const excerpt = plainText.substring(0, 150);
+
+  return plainText.length > 150 ? `${excerpt}...` : excerpt;
+};
+
 export default function AdminDashboard() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -22,6 +33,8 @@ export default function AdminDashboard() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const statusRef = useRef("published");
   const coverFileInputRef = useRef(null);
+  const originalContentRef = useRef("");
+  const originalSummaryRef = useRef("");
 
   // AI Summarize State
   const [pendingComments, setPendingComments] = useState(0);
@@ -141,19 +154,13 @@ export default function AdminDashboard() {
       }
     }
 
-    // Generate Summary if empty
+    // Keep the list-page excerpt in sync when the body was edited but the
+    // summary was left untouched. A summary edited in this session is kept.
     let finalSummary = summary.trim();
-    if (!finalSummary) {
-      // Strip markdown syntax
-      const plainText = content
-        .replace(/[#*`~_]/g, '')               // remove # * ` ~ _
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // remove markdown links [text](url) -> text
-        .replace(/\n+/g, ' ')                  // collapse newlines
-        .trim();
-      finalSummary = plainText.substring(0, 150);
-      if (plainText.length > 150) {
-        finalSummary += '...';
-      }
+    const contentChanged = Boolean(postId) && content !== originalContentRef.current;
+    const summaryUnchanged = summary === originalSummaryRef.current;
+    if (!finalSummary || (contentChanged && summaryUnchanged)) {
+      finalSummary = generateSummary(content);
     }
 
     try {
@@ -196,6 +203,8 @@ export default function AdminDashboard() {
     setCoverImage(post.cover_image || "");
     setStatus(post.status || "published");
     statusRef.current = post.status || "published";
+    originalContentRef.current = post.content || "";
+    originalSummaryRef.current = post.summary || "";
     
     // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -234,6 +243,8 @@ export default function AdminDashboard() {
     }
     setStatus("published");
     statusRef.current = "published";
+    originalContentRef.current = "";
+    originalSummaryRef.current = "";
   };
 
   // Auth Gate
@@ -566,7 +577,7 @@ export default function AdminDashboard() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>文章摘要 (顯示於列表頁)</label>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>(選填，留空自動擷取)</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>(選填；修改內文時會自動同步，手動修改則保留)</span>
                 </div>
                 <textarea 
                   value={summary}
