@@ -193,6 +193,19 @@ export class MockDb {
     return post;
   }
 
+  static deletePost(postId) {
+    const posts = this.getPosts();
+    this.setStorageItem("mock_posts", posts.filter(p => p.id !== postId));
+
+    const comments = this.getStorageItem("mock_comments", DEFAULT_COMMENTS);
+    this.setStorageItem("mock_comments", comments.filter(c => c.post_id !== postId));
+
+    const likes = this.getStorageItem("mock_likes", DEFAULT_LIKES);
+    this.setStorageItem("mock_likes", likes.filter(l => l.post_id !== postId));
+
+    return true;
+  }
+
   // Comments
   static getComments(postId) {
     const allComments = this.getStorageItem("mock_comments", DEFAULT_COMMENTS);

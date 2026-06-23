@@ -73,6 +73,18 @@ export const dbService = {
     }
   },
 
+  async deletePost(postId) {
+    if (isMock) {
+      return MockDb.deletePost(postId);
+    }
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', postId);
+    if (error) throw error;
+    return true;
+  },
+
   // --- COMMENTS ---
   async getComments(postId) {
     if (isMock) {

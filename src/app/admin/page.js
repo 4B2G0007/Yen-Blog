@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { dbService } from '@/lib/dbService';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ShieldAlert, PlusCircle, Edit, Trash, Save, Eye, LayoutGrid, CheckCircle, ChevronDown, ChevronUp, Mail, Brain } from 'lucide-react';
+import { ShieldAlert, PlusCircle, Edit, Trash, Save, Eye, LayoutGrid, CheckCircle, ChevronDown, ChevronUp, Mail, Brain, ImagePlus, X } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { user, loading } = useAuth();
@@ -21,6 +21,7 @@ export default function AdminDashboard() {
   const [status, setStatus] = useState("published");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const statusRef = useRef("published");
+  const coverFileInputRef = useRef(null);
 
   // AI Summarize State
   const [pendingComments, setPendingComments] = useState(0);
@@ -41,6 +42,35 @@ export default function AdminDashboard() {
         .replace(/[^a-z0-9\u4e00-\u9fa5-_]+/g, '-')
         .replace(/^-+|-+$/g, '');
       setSlug(generatedSlug);
+    }
+  };
+
+  const handleCoverImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png"];
+    if (!allowedTypes.includes(file.type)) {
+      alert("封面圖片只支援 JPG 與 PNG 格式！");
+      e.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCoverImage(reader.result);
+    };
+    reader.onerror = () => {
+      alert("讀取圖片失敗，請重新選擇一次。");
+      e.target.value = "";
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCoverImageClear = () => {
+    setCoverImage("");
+    if (coverFileInputRef.current) {
+      coverFileInputRef.current.value = "";
     }
   };
 
@@ -168,6 +198,27 @@ export default function AdminDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleDeleteClick = async (post) => {
+    const confirmed = confirm(`確定要刪除「${post.title}」嗎？這個動作無法復原。`);
+    if (!confirmed) return;
+
+    try {
+      await dbService.deletePost(post.id);
+      if (postId === post.id) {
+        handleResetForm();
+      }
+      setSuccessMsg("文章已刪除。");
+      await loadPosts();
+
+      setTimeout(() => {
+        setSuccessMsg("");
+      }, 3000);
+    } catch (err) {
+      console.error("刪除文章失敗：", err);
+      alert("刪除文章失敗：" + (err.message || err.details || JSON.stringify(err)));
+    }
+  };
+
   const handleResetForm = () => {
     setPostId(null);
     setTitle("");
@@ -175,6 +226,9 @@ export default function AdminDashboard() {
     setSummary("");
     setContent("");
     setCoverImage("");
+    if (coverFileInputRef.current) {
+      coverFileInputRef.current.value = "";
+    }
     setStatus("published");
     statusRef.current = "published";
   };
@@ -424,16 +478,80 @@ export default function AdminDashboard() {
                   />
                 </div>
 
-                {/* Cover Image URL */}
+                {/* Cover Image */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>封面圖片網址</label>
-                  <input 
-                    type="text"
-                    value={coverImage}
-                    onChange={(e) => setCoverImage(e.target.value)}
-                    placeholder="https://images.unsplash.com/... (選填)"
-                    style={inputStyle}
+                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>封面圖片</label>
+                  <input
+                    ref={coverFileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+                    onChange={handleCoverImageSelect}
+                    style={{ display: 'none' }}
                   />
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => coverFileInputRef.current?.click()}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid var(--border-card)',
+                        borderRadius: '10px',
+                        padding: '0.65rem 1rem',
+                        color: 'var(--text-primary)',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        transition: 'var(--transition-smooth)'
+                      }}
+                    >
+                      <ImagePlus size={16} />
+                      選擇
+                    </button>
+                    {coverImage && (
+                      <button
+                        type="button"
+                        onClick={handleCoverImageClear}
+                        style={{
+                          background: 'rgba(244, 63, 94, 0.08)',
+                          border: '1px solid rgba(244, 63, 94, 0.25)',
+                          borderRadius: '10px',
+                          padding: '0.65rem 1rem',
+                          color: '#fda4af',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        <X size={16} />
+                        移除
+                      </button>
+                    )}
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      支援 .jpg 與 .png
+                    </span>
+                  </div>
+                  {coverImage && (
+                    <div style={{
+                      marginTop: '0.5rem',
+                      width: '100%',
+                      maxWidth: '260px',
+                      aspectRatio: '16 / 9',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      border: '1px solid var(--border-card)',
+                      background: 'rgba(0,0,0,0.2)'
+                    }}>
+                      <img
+                        src={coverImage}
+                        alt="封面圖片預覽"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -594,6 +712,25 @@ export default function AdminDashboard() {
                   <Eye size={12} />
                   預覽
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteClick(post)}
+                  style={{
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '8px',
+                    background: 'rgba(244, 63, 94, 0.1)',
+                    border: '1px solid rgba(244, 63, 94, 0.35)',
+                    fontSize: '0.8rem',
+                    color: '#fda4af',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                  }}
+                >
+                  <Trash size={12} />
+                  刪除
+                </button>
                 <button 
                   onClick={() => handleEditClick(post)}
                   style={{

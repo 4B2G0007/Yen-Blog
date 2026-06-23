@@ -84,7 +84,7 @@ export default function Home() {
             border: '1px solid rgba(99, 102, 241, 0.2)'
           }}>
             <Sparkles size={12} />
-            歡迎來到我的流光數位空間
+            歡迎來到我的部落格
           </div>
           <h1 style={{ fontSize: '3rem', fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1.2 }}>
             探索程式、設計與<span className="text-gradient">生活美學</span>
