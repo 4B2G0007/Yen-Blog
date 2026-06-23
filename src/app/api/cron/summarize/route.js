@@ -3,6 +3,52 @@ import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import nodemailer from 'nodemailer';
 
+export const maxDuration = 60;
+
+const GEMINI_MAX_ATTEMPTS = 3;
+const GEMINI_REQUEST_TIMEOUT_MS = 15000;
+const GEMINI_RETRY_DELAYS_MS = [1000, 2500];
+const RETRYABLE_GEMINI_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+const wait = (duration) => new Promise(resolve => setTimeout(resolve, duration));
+
+function isRetryableGeminiError(error) {
+  if (RETRYABLE_GEMINI_STATUSES.has(error?.status)) return true;
+
+  const message = error?.message || '';
+  return error?.name === 'GoogleGenerativeAIAbortError'
+    || /fetch failed|network|ECONNRESET|ETIMEDOUT|timeout|temporarily unavailable|overloaded/i.test(message);
+}
+
+async function generateGeminiSummary(model, prompt) {
+  for (let attempt = 1; attempt <= GEMINI_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const result = await model.generateContent(prompt, {
+        timeout: GEMINI_REQUEST_TIMEOUT_MS
+      });
+      return result.response.text();
+    } catch (error) {
+      const retryable = isRetryableGeminiError(error);
+
+      if (!retryable || attempt === GEMINI_MAX_ATTEMPTS) {
+        if (retryable) {
+          const unavailableError = new Error('Gemini 目前忙碌，系統已自動重試，請稍後再試。');
+          unavailableError.code = 'GEMINI_UNAVAILABLE';
+          unavailableError.retryable = true;
+          unavailableError.attempts = attempt;
+          throw unavailableError;
+        }
+        throw error;
+      }
+
+      const baseDelay = GEMINI_RETRY_DELAYS_MS[attempt - 1];
+      const delay = baseDelay + Math.floor(Math.random() * 400);
+      console.warn(`Gemini 第 ${attempt} 次呼叫失敗，${delay}ms 後自動重試。`, error?.message);
+      await wait(delay);
+    }
+  }
+}
+
 // 建立獨立的 Server-side Supabase Client (繞過 RLS 的 Admin 權限，若有設定 service_role_key)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -97,8 +143,7 @@ ${JSON.stringify(allMessages, null, 2)}
 請使用精美、結構清晰的 Markdown 格式撰寫，文字要親切有條理。
 `;
 
-    const result = await model.generateContent(prompt);
-    const aiSummaryMarkdown = result.response.text();
+    const aiSummaryMarkdown = await generateGeminiSummary(model, prompt);
 
     // 將 Markdown 轉為簡單的 HTML 格式以便信件呈現
     const htmlBody = `
@@ -164,7 +209,20 @@ ${JSON.stringify(allMessages, null, 2)}
 
   } catch (error) {
     console.error("AI 彙整發信失敗：", error);
-    return NextResponse.json({ error: error.message || "伺服器內部錯誤" }, { status: 500 });
+    if (error.code === 'GEMINI_UNAVAILABLE') {
+      return NextResponse.json({
+        error: error.message,
+        code: error.code,
+        retryable: error.retryable,
+        attempts: error.attempts
+      }, { status: 503 });
+    }
+
+    return NextResponse.json({
+      error: error.message || "伺服器內部錯誤",
+      code: 'AI_SUMMARY_FAILED',
+      retryable: false
+    }, { status: 500 });
   }
 }
 

@@ -111,7 +111,10 @@ export default function AdminDashboard() {
       await loadPendingCount();
     } catch (err) {
       console.error("AI 總結發信失敗：", err);
-      alert("發信失敗：" + (err.message || JSON.stringify(err)));
+      const message = err.retryable
+        ? err.message
+        : "彙整失敗：" + (err.message || JSON.stringify(err));
+      alert(message);
     } finally {
       setSummarizing(false);
     }
@@ -344,7 +347,11 @@ export default function AdminDashboard() {
               Gemini AI 留言彙整發信系統
             </h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-              目前有 <strong style={{ color: pendingComments > 0 ? 'var(--secondary)' : 'var(--text-muted)' }}>{pendingComments}</strong> 則新文章留言/簽到留言尚未處理。
+              {summarizing ? (
+                "正在產生分析報告，Gemini 忙碌時系統會自動重試。"
+              ) : (
+                <>目前有 <strong style={{ color: pendingComments > 0 ? 'var(--secondary)' : 'var(--text-muted)' }}>{pendingComments}</strong> 則新文章留言/簽到留言尚未處理。</>
+              )}
             </p>
           </div>
         </div>
@@ -374,7 +381,7 @@ export default function AdminDashboard() {
           onMouseLeave={(e) => { if (pendingComments > 0 && !summarizing) e.currentTarget.style.transform = 'none'; }}
         >
           <Mail size={16} />
-          {summarizing ? "AI 彙整發信中..." : "AI 彙整並寄信給我"}
+          {summarizing ? "AI 分析中，必要時自動重試..." : "AI 彙整並寄信給我"}
         </button>
       </section>
 

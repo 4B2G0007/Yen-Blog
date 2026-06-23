@@ -325,9 +325,21 @@ export const dbService = {
     const response = await fetch('/api/cron/summarize', {
       method: 'POST'
     });
-    const data = await response.json();
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      // Deployment platforms may return an HTML error page for gateway failures.
+    }
     if (!response.ok) {
-      throw new Error(data.error || "發送請求失敗");
+      const fallbackMessage = response.status === 503
+        ? "AI 服務目前忙碌，請稍後再試。"
+        : "發送請求失敗";
+      const error = new Error(data?.error || fallbackMessage);
+      error.code = data?.code || `HTTP_${response.status}`;
+      error.retryable = data?.retryable ?? response.status === 503;
+      error.attempts = data?.attempts;
+      throw error;
     }
     return data;
   },
