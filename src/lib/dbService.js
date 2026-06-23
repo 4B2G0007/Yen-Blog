@@ -330,5 +330,129 @@ export const dbService = {
       throw new Error(data.error || "發送請求失敗");
     }
     return data;
+  },
+
+  // --- SUGGESTIONS ---
+  async getSuggestions() {
+    if (isMock) {
+      return MockDb.getSuggestions();
+    }
+    const { data, error } = await supabase
+      .from('suggestions')
+      .select(`
+        id,
+        user_id,
+        title,
+        category,
+        content,
+        page_url,
+        admin_marker,
+        created_at,
+        updated_at,
+        profiles (
+          display_name,
+          avatar_url
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return data.map(item => ({
+      id: item.id,
+      user_id: item.user_id,
+      title: item.title,
+      category: item.category,
+      content: item.content,
+      page_url: item.page_url,
+      admin_marker: item.admin_marker,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      display_name: item.profiles?.display_name || '使用者',
+      avatar_url: item.profiles?.avatar_url || 'https://api.dicebear.com/7.x/adventurer/svg',
+    }));
+  },
+
+  async addSuggestion(user, suggestion) {
+    if (isMock) {
+      return MockDb.addSuggestion(user, suggestion);
+    }
+    const { data, error } = await supabase
+      .from('suggestions')
+      .insert([
+        {
+          user_id: user.id,
+          title: suggestion.title,
+          category: suggestion.category || 'feature',
+          content: suggestion.content,
+          page_url: suggestion.page_url || null,
+          admin_marker: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ])
+      .select(`
+        id,
+        user_id,
+        title,
+        category,
+        content,
+        page_url,
+        admin_marker,
+        created_at,
+        updated_at
+      `)
+      .single();
+    if (error) throw error;
+
+    return {
+      ...data,
+      display_name: user.display_name,
+      avatar_url: user.avatar_url
+    };
+  },
+
+  async updateSuggestionMarker(suggestionId, marker) {
+    if (isMock) {
+      return MockDb.updateSuggestionMarker(suggestionId, marker);
+    }
+    const { data, error } = await supabase
+      .from('suggestions')
+      .update({
+        admin_marker: marker,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', suggestionId)
+      .select(`
+        id,
+        user_id,
+        title,
+        category,
+        content,
+        page_url,
+        admin_marker,
+        created_at,
+        updated_at,
+        profiles (
+          display_name,
+          avatar_url
+        )
+      `)
+      .single();
+    if (error) throw error;
+
+    return {
+      id: data.id,
+      user_id: data.user_id,
+      title: data.title,
+      category: data.category,
+      content: data.content,
+      page_url: data.page_url,
+      admin_marker: data.admin_marker,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      display_name: data.profiles?.display_name || '使用者',
+      avatar_url: data.profiles?.avatar_url || 'https://api.dicebear.com/7.x/adventurer/svg',
+    };
   }
 };

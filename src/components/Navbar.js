@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
-import { LogIn, LogOut, PenSquare, MessageSquare, BookOpen, User, ShieldAlert, Layers } from 'lucide-react';
+import { LogIn, LogOut, PenSquare, MessageSquare, BookOpen, User, ShieldAlert, Layers, Lightbulb } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -24,11 +24,22 @@ export default function Navbar() {
       zIndex: 1000,
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'between',
+      justifyContent: 'space-between',
       padding: '0.75rem 1.5rem',
       borderRadius: '24px',
       border: '1px solid var(--border-card)',
     }}>
+      <style jsx>{`
+        @media (max-width: 820px) {
+          .nav-text {
+            display: none;
+          }
+          .nav-links {
+            gap: 0.8rem !important;
+            margin-left: 8px !important;
+          }
+        }
+      `}</style>
       {/* Brand Logo */}
       <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, fontSize: '1.25rem' }}>
         <span className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -38,7 +49,7 @@ export default function Navbar() {
       </Link>
 
       {/* Nav Links */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginLeft:'15px' }}>
+      <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginLeft:'15px' }}>
         <Link 
           href="/" 
           style={{ 
@@ -67,6 +78,23 @@ export default function Navbar() {
         >
           <MessageSquare size={16} />
           訪客留言板
+        </Link>
+
+        <Link
+          href="/suggestions"
+          title="功能建議 / 改善回報"
+          style={{
+            fontSize: '0.95rem',
+            fontWeight: 500,
+            color: isActive('/suggestions') ? 'var(--primary)' : 'var(--text-secondary)',
+            transition: 'var(--transition-smooth)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem'
+          }}
+        >
+          <Lightbulb size={16} />
+          <span className="nav-text">功能建議</span>
         </Link>
 
         {user?.role === 'admin' && (

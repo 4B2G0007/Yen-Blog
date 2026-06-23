@@ -151,6 +151,35 @@ const DEFAULT_LIKES = [
   { post_id: "post-2", user_id: "user-mock-admin" }
 ];
 
+const DEFAULT_SUGGESTIONS = [
+  {
+    id: "suggestion-1",
+    user_id: "user-mock-2",
+    display_name: "Reader",
+    avatar_url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix",
+    title: "新增文章搜尋功能",
+    category: "feature",
+    content: "希望可以用關鍵字搜尋文章標題和內容，找舊文章會方便很多。",
+    page_url: "/",
+    admin_marker: "todo",
+    created_at: "2026-06-20T10:30:00Z",
+    updated_at: "2026-06-20T10:30:00Z"
+  },
+  {
+    id: "suggestion-2",
+    user_id: "user-mock-3",
+    display_name: "Anya",
+    avatar_url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Anya",
+    title: "手機版導覽列太擠",
+    category: "bug",
+    content: "手機寬度比較小的時候，導覽列的文字和按鈕有點擠在一起。",
+    page_url: "",
+    admin_marker: null,
+    created_at: "2026-06-21T15:20:00Z",
+    updated_at: "2026-06-21T15:20:00Z"
+  }
+];
+
 export class MockDb {
   static getStorageItem(key, defaultValue) {
     if (typeof window === "undefined") return defaultValue;
@@ -317,5 +346,42 @@ export class MockDb {
     const filtered = entries.filter(e => e.id !== entryId);
     this.setStorageItem("mock_guestbook", filtered);
     return true;
+  }
+
+  // Suggestions
+  static getSuggestions() {
+    const suggestions = this.getStorageItem("mock_suggestions", DEFAULT_SUGGESTIONS);
+    return suggestions.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+
+  static addSuggestion(user, suggestion) {
+    const suggestions = this.getStorageItem("mock_suggestions", DEFAULT_SUGGESTIONS);
+    const newSuggestion = {
+      id: `suggestion-${Date.now()}`,
+      user_id: user.id,
+      display_name: user.display_name,
+      avatar_url: user.avatar_url,
+      title: suggestion.title,
+      category: suggestion.category || "feature",
+      content: suggestion.content,
+      page_url: suggestion.page_url || "",
+      admin_marker: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    suggestions.unshift(newSuggestion);
+    this.setStorageItem("mock_suggestions", suggestions);
+    return newSuggestion;
+  }
+
+  static updateSuggestionMarker(suggestionId, marker) {
+    const suggestions = this.getStorageItem("mock_suggestions", DEFAULT_SUGGESTIONS);
+    const updated = suggestions.map((item) => (
+      item.id === suggestionId
+        ? { ...item, admin_marker: marker, updated_at: new Date().toISOString() }
+        : item
+    ));
+    this.setStorageItem("mock_suggestions", updated);
+    return updated.find((item) => item.id === suggestionId) || null;
   }
 }
